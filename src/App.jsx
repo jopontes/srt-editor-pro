@@ -50,6 +50,24 @@ function App() {
     }
   }, [subtitles]);
 
+  const resetProject = () => {
+    if (!window.confirm("Are you sure you want to start a new project? All unsaved progress will be lost.")) return;
+    setSubtitles([]);
+    setContinuousText("");
+    setCurrentTime(0);
+    setIsPlaying(false);
+    if (videoUrl && videoUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(videoUrl);
+    }
+    setVideoUrl(null);
+    setIsLocalVideo(false);
+    setIsVideoLoading(false);
+    setCurrentVideoFile(null);
+    setSrtFileName(null);
+    setVideoFileName(null);
+    setViewMode('block');
+  };
+
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -404,6 +422,12 @@ function App() {
           </div>
 
           <div className="flex items-center gap-3">
+            <button className="btn-primary-tactile text-white h-9 px-4 rounded-md flex items-center gap-2 text-sm font-medium" onClick={resetProject}>
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              New Project
+            </button>
+            <div className="w-px h-6 bg-[var(--border-dim)] mx-1"></div>
+
             <input type="file" accept=".srt" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
             <button className="btn-tactile text-[var(--text-secondary)] h-9 px-3 rounded-md flex items-center gap-2 text-sm font-medium" onClick={() => fileInputRef.current.click()}>
               <span className="material-symbols-outlined text-[18px]">upload_file</span>
@@ -440,21 +464,34 @@ function App() {
       <main className="flex-1 flex overflow-hidden flex-col">
         <div className="flex-1 flex overflow-hidden min-h-0">
 
-          {/* Sidebar Editors */}
-          <div className="w-[30%] min-w-[350px] flex flex-col border-r border-[var(--border-dim)] bg-[var(--bg-deep)] z-10">
-            <div className="h-12 bg-[var(--bg-surface)] border-b border-[var(--border-dim)] flex items-center px-4 gap-2 shrink-0">
-              <button
-                className={`px-4 py-1.5 rounded text-xs font-medium transition-colors border ${viewMode === 'block' ? 'bg-[var(--bg-surface-active)] text-[var(--text-primary)] border-[var(--border-highlight)] shadow-sm' : 'text-[var(--text-secondary)] border-transparent hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-light)]'}`}
-                onClick={() => setViewMode('block')}
-              >
-                Block Editor
-              </button>
-              <button
-                className={`px-4 py-1.5 rounded text-xs font-medium transition-colors border ${viewMode === 'text' ? 'bg-[var(--bg-surface-active)] text-[var(--text-primary)] border-[var(--border-highlight)] shadow-sm' : 'text-[var(--text-secondary)] border-transparent hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-light)]'}`}
-                onClick={() => setViewMode('text')}
-              >
-                Text View
-              </button>
+          {/* Block Editor Column */}
+          <div className={`flex flex-col border-r border-[var(--border-dim)] bg-[var(--bg-deep)] z-10 transition-all ${viewMode === 'block' ? 'w-1/2' : 'w-1/3'}`}>
+            <div className="h-10 bg-[var(--bg-surface)] border-b border-[var(--border-dim)] flex items-center px-4 justify-between shrink-0">
+              <div className="flex items-center gap-4">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">Block Editor</h2>
+                <div className="flex bg-[var(--bg-deep)] rounded p-0.5 border border-[var(--border-dim)]">
+                  <button
+                    className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${viewMode === 'block' ? 'bg-[var(--bg-surface-active)] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-white'}`}
+                    onClick={() => setViewMode('block')}
+                  >
+                    Block Only
+                  </button>
+                  <button
+                    className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${viewMode === 'text' ? 'bg-[var(--bg-surface-active)] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-white'}`}
+                    onClick={() => setViewMode('text')}
+                  >
+                    Triple Pane
+                  </button>
+                </div>
+              </div>
+              <div className="flex gap-1">
+                <button className="text-[var(--text-muted)] hover:text-[var(--text-primary)] p-1 rounded hover:bg-[var(--bg-surface-light)] transition-colors">
+                  <span className="material-symbols-outlined text-[16px]">filter_list</span>
+                </button>
+                <button className="text-[var(--text-muted)] hover:text-[var(--text-primary)] p-1 rounded hover:bg-[var(--bg-surface-light)] transition-colors">
+                  <span className="material-symbols-outlined text-[16px]">search</span>
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
@@ -463,7 +500,7 @@ function App() {
                   <span className="material-symbols-outlined text-4xl opacity-50">subtitles_off</span>
                   <p>Import an SRT or generate captions from a video</p>
                 </div>
-              ) : viewMode === 'block' ? (
+              ) : (
                 <div className="flex flex-col gap-3 max-w-4xl mx-auto">
                   {subtitles.map((sub, idx) => {
                     const isActive = activeSubtitle && activeSubtitle.id === sub.id;
@@ -535,100 +572,115 @@ function App() {
                     <span>Insert New Block</span>
                   </button>
                 </div>
-              ) : (
-                <div className="flex flex-col h-full gap-4">
-                  <textarea
-                    ref={continuousEditorRef}
-                    className="w-full h-full bg-transparent color-[var(--text-primary)] font-main text-base leading-[1.8] border-none resize-none outline-none p-2 focus:ring-0 text-[var(--text-primary)] placeholder-[var(--text-muted)]"
-                    value={continuousText}
-                    onChange={handleContinuousChange}
-                    onClick={handleContinuousClick}
-                    onKeyUp={(e) => {
-                      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-                        handleContinuousClick(e);
-                      }
-                    }}
-                    placeholder="Type or paste subtitles here. Use double line breaks to split blocks."
-                  />
-                  <button
-                    className="btn-primary-tactile text-white py-2 rounded-lg text-sm font-medium w-full flex items-center justify-center gap-2 shrink-0 mb-4"
-                    onClick={handleAutoFormat}
-                    disabled={isFormatting}
-                  >
-                    <span className="material-symbols-outlined text-[18px]">auto_fix</span>
-                    {isFormatting ? "Formatting..." : "Auto Format Blocks"}
-                  </button>
-                </div>
               )}
             </div>
           </div>
 
-          {/* Center Stage Video */}
-          <div className="flex-1 flex flex-col bg-[var(--bg-deep)] min-w-[500px]">
-            <div className="p-4 flex items-center justify-between border-b border-[var(--border-dim)] bg-[var(--bg-surface)]">
-              <div className="flex items-center gap-3">
-                <span className="material-symbols-outlined text-[var(--text-muted)]">movie</span>
-                <span className="text-sm font-medium text-[var(--text-secondary)]">Preview Stage</span>
+          {/* Text Stream Column (Conditional) */}
+          {viewMode === 'text' && (
+            <div className="w-1/3 flex flex-col border-r border-[var(--border-dim)] bg-[var(--bg-surface)] z-10 transition-all">
+              <div className="h-10 bg-[var(--bg-surface)] border-b border-[var(--border-dim)] flex items-center px-4 justify-between shrink-0">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">Text Stream</h2>
+                <div className="flex gap-2 text-[var(--text-muted)] text-xs">
+                  <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-green-500"></span> Live Sync</span>
+                </div>
               </div>
+              <div className="flex-1 overflow-y-auto p-4 custom-scrollbar flex flex-col gap-4">
+                <textarea
+                  ref={continuousEditorRef}
+                  className="w-full flex-1 bg-transparent color-[var(--text-primary)] font-main text-base leading-[1.8] border-none resize-none outline-none p-2 focus:ring-0 text-[var(--text-primary)] placeholder-[var(--text-muted)]"
+                  value={continuousText}
+                  onChange={handleContinuousChange}
+                  onClick={handleContinuousClick}
+                  onKeyUp={(e) => {
+                    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                      handleContinuousClick(e);
+                    }
+                  }}
+                  placeholder="Type or paste subtitles here. Use double line breaks to split blocks."
+                />
+                <button
+                  className="btn-primary-tactile text-white py-2 rounded-lg text-sm font-medium w-full flex items-center justify-center gap-2 shrink-0 mb-4"
+                  onClick={handleAutoFormat}
+                  disabled={isFormatting}
+                >
+                  <span className="material-symbols-outlined text-[18px]">auto_fix</span>
+                  {isFormatting ? "Formatting..." : "Auto Format Blocks"}
+                </button>
+              </div>
+            </div>
+          )}
 
-              <input type="file" accept="video/mp4,video/webm,video/ogg" className="hidden" ref={videoInputRef} onChange={handleVideoUpload} />
-              <button className="btn-tactile px-3 py-1.5 rounded text-xs font-medium text-[var(--text-primary)] flex items-center gap-2" onClick={() => videoInputRef.current.click()}>
-                <span className="material-symbols-outlined text-[16px]">video_file</span> Load Local Video
-              </button>
+          {/* Center Stage Video */}
+          <div className={`flex flex-col bg-[var(--bg-deep)] transition-all ${viewMode === 'block' ? 'w-1/2' : 'w-1/3'}`}>
+            <div className="h-10 bg-[var(--bg-surface)] border-b border-[var(--border-dim)] flex items-center px-4 justify-between shrink-0">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">Preview</h2>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono text-[var(--text-muted)] border border-[var(--border-dim)] px-1.5 rounded">16:9</span>
+                <input type="file" accept="video/mp4,video/webm,video/ogg" className="hidden" ref={videoInputRef} onChange={handleVideoUpload} />
+                <button className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] p-1 rounded hover:bg-[var(--bg-surface-light)] transition-colors" title="Load Local Video" onClick={() => videoInputRef.current.click()}>
+                  <span className="material-symbols-outlined text-[16px]">video_file</span>
+                </button>
+              </div>
             </div>
 
-            <div className="flex-1 relative flex flex-col items-center justify-center group overflow-hidden bg-black border-b border-[var(--border-dim)] shadow-2xl">
-              {!videoUrl && (
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-black to-slate-900 opacity-60"></div>
-              )}
+            <div className="flex-1 flex items-center justify-center bg-black relative p-6">
+              <div className="w-full aspect-video bg-black flex items-center justify-center group overflow-hidden border border-[var(--border-dim)] shadow-2xl relative rounded-md">
+                {!videoUrl && (
+                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-black to-slate-900 opacity-60"></div>
+                )}
 
-              {isVideoLoading && (
-                <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/70 text-white font-medium gap-3">
-                  <span className="material-symbols-outlined animate-spin">progress_activity</span>
-                  Loading Video...
-                </div>
-              )}
+                {isVideoLoading && (
+                  <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/70 text-white font-medium gap-3">
+                    <span className="material-symbols-outlined animate-spin">progress_activity</span>
+                    Loading Video...
+                  </div>
+                )}
 
-              {videoUrl && isLocalVideo ? (
-                <video
-                  ref={videoRef}
-                  src={videoUrl}
-                  onLoadedMetadata={handleNativeVideoLoaded}
-                  onTimeUpdate={handleNativeVideoTimeUpdate}
-                  onClick={togglePlayPause}
-                  className="w-full h-full object-contain cursor-pointer"
-                  style={{ pointerEvents: isPlaying ? 'none' : 'auto' }}
-                />
-              ) : (
-                <span className="text-[var(--text-muted)] z-10 flex flex-col items-center gap-4">
-                  <span className="material-symbols-outlined text-5xl opacity-40">movie_edit</span>
-                  <p className="text-sm">Video Preview Area</p>
-                </span>
-              )}
-
-              {videoUrl && isLocalVideo && (
-                <div
-                  onClick={togglePlayPause}
-                  style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, cursor: 'pointer', zIndex: 1 }}
-                />
-              )}
-
-              {subtitles.length > 0 && activeSubtitle && (
-                <div className="absolute bottom-12 w-[80%] text-center z-10 pointer-events-none">
-                  <span
-                    className="inline-block px-4 py-2 bg-black/60 backdrop-blur-sm rounded-md text-white text-xl font-medium shadow-lg border border-white/10"
-                    style={{ textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}
-                  >
-                    {activeSubtitle.text.split('\n').map((line, i) => (
-                      <span key={i}>{line}<br /></span>
-                    ))}
+                {videoUrl && isLocalVideo ? (
+                  <video
+                    ref={videoRef}
+                    src={videoUrl}
+                    onLoadedMetadata={handleNativeVideoLoaded}
+                    onTimeUpdate={handleNativeVideoTimeUpdate}
+                    onClick={togglePlayPause}
+                    className="absolute inset-0 w-full h-full object-contain cursor-pointer"
+                    style={{ pointerEvents: isPlaying ? 'none' : 'auto' }}
+                  />
+                ) : (
+                  <span className="text-[var(--text-muted)] z-10 flex flex-col items-center gap-4">
+                    <span className="material-symbols-outlined text-5xl opacity-40">movie_edit</span>
+                    <p className="text-sm">Video Preview Area</p>
+                    <button className="btn-tactile px-3 py-1.5 rounded text-xs font-medium text-[var(--text-primary)] flex items-center gap-2 mt-2" onClick={() => videoInputRef.current.click()}>
+                      Load Local Video
+                    </button>
                   </span>
-                </div>
-              )}
+                )}
+
+                {videoUrl && isLocalVideo && (
+                  <div
+                    onClick={togglePlayPause}
+                    style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, cursor: 'pointer', zIndex: 1 }}
+                  />
+                )}
+
+                {subtitles.length > 0 && activeSubtitle && (
+                  <div className="absolute bottom-[10%] w-[80%] text-center z-10 pointer-events-none flex justify-center">
+                    <span
+                      className="inline-block px-4 py-2 bg-black/60 backdrop-blur-sm rounded-md text-white md:text-xl sm:text-lg font-medium shadow-lg border border-white/10 text-center"
+                      style={{ textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}
+                    >
+                      {activeSubtitle.text.split('\n').map((line, i) => (
+                        <span key={i}>{line}<br /></span>
+                      ))}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
 
             {videoUrl && isLocalVideo && subtitles.length === 0 && (
-              <div className="p-4 bg-[var(--bg-surface)]">
+              <div className="p-4 bg-[var(--bg-surface)] border-t border-[var(--border-dim)]">
                 <button
                   className="btn-primary-tactile w-full py-3 rounded-xl text-sm font-medium text-white flex items-center justify-center gap-2"
                   onClick={handleGenerateCaptions}
