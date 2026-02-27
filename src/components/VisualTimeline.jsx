@@ -145,7 +145,7 @@ export default function VisualTimeline({ subtitles, currentTime, maxTime, onSeek
     const scrubberPercentage = maxTime > 0 ? (currentTime / maxTime) * 100 : 0;
 
     return (
-        <div className="h-full min-w-[1000px] relative track-pattern w-full overflow-x-auto overflow-y-hidden custom-scrollbar" ref={timelineRef} onClick={handleTimelineClick}>
+        <div className="h-full min-w-[1000px] relative w-full overflow-x-auto overflow-y-hidden custom-scrollbar" ref={timelineRef} onClick={handleTimelineClick}>
 
             {/* Header Markers */}
             <div className="h-8 border-b border-[var(--border-dim)] flex items-end pb-1 sticky top-0 bg-[var(--bg-deep)] z-10 w-[max-content]" style={{ minWidth: `${Math.max(100, zoomLevel)}%` }}>

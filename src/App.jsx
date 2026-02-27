@@ -38,6 +38,7 @@ function App() {
   const lastTimeRef = useRef(0);
 
   const [videoDuration, setVideoDuration] = useState(0);
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
 
   const maxTime = Math.max(
     subtitles.length > 0 ? Math.max(...subtitles.map(s => s.end)) + 2000 : 0,
@@ -422,40 +423,45 @@ function App() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button className="btn-primary-tactile text-white h-9 px-4 rounded-md flex items-center gap-2 text-sm font-medium" onClick={resetProject}>
-              <span className="material-symbols-outlined text-[18px]">add</span>
-              New Project
-            </button>
-            <div className="w-px h-6 bg-[var(--border-dim)] mx-1"></div>
-
             <input type="file" accept=".srt" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
             <button className="btn-tactile text-[var(--text-secondary)] h-9 px-3 rounded-md flex items-center gap-2 text-sm font-medium" onClick={() => fileInputRef.current.click()}>
               <span className="material-symbols-outlined text-[18px]">upload_file</span>
               Import SRT
             </button>
 
-            <div className="flex items-center gap-2 border-r border-white/10 pr-4 ml-2">
-              <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-wider">Lang</span>
-              <select
-                className="bg-[var(--bg-deep)] border border-[var(--border-dim)] text-[var(--text-secondary)] text-xs rounded-md px-2 py-1 focus:ring-1 focus:ring-violet-500 outline-none"
-                value={targetLanguage}
-                onChange={(e) => setTargetLanguage(e.target.value)}
-              >
-                <option value="PT-BR">PT-BR</option>
-                <option value="EN-US">EN-US</option>
-                <option value="EN-UK">EN-UK</option>
-                <option value="ES">ES</option>
-                <option value="FR">FR</option>
-              </select>
-            </div>
+            <div className="w-px h-6 bg-[var(--border-dim)] mr-1 ml-1"></div>
 
-            <div className="relative group flex ml-1">
-              <button className="btn-primary-tactile text-white h-9 px-3 rounded-l-md flex items-center gap-2 text-sm font-medium border-r border-white/20" onClick={handleExport} disabled={subtitles.length === 0}>
-                <span className="material-symbols-outlined text-[18px]">download</span> Export SRT
+            <button className="btn-primary-tactile text-white h-9 px-4 rounded-md flex items-center gap-2 text-sm font-medium" onClick={resetProject}>
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              New Project
+            </button>
+
+            <div className="relative ml-1">
+              <button
+                className="btn-primary-tactile text-white h-9 px-4 rounded-md flex items-center gap-2 text-sm font-medium"
+                onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
+                disabled={subtitles.length === 0}
+              >
+                <span className="material-symbols-outlined text-[18px]">download</span> Export
+                <span className="material-symbols-outlined text-[16px] ml-[-4px]">{isExportMenuOpen ? 'expand_less' : 'expand_more'}</span>
               </button>
-              <button className="btn-primary-tactile text-white h-9 px-2 rounded-r-md flex items-center gap-2 text-sm font-medium" onClick={handleExportVtt} disabled={subtitles.length === 0} title="Export VTT">
-                VTT
-              </button>
+
+              {isExportMenuOpen && (
+                <div className="absolute right-0 top-full mt-2 w-32 bg-[var(--bg-deep)] border border-[var(--border-dim)] rounded-md shadow-xl py-1 z-50 overflow-hidden">
+                  <button
+                    className="w-full text-left px-4 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-surface)] hover:text-white transition-colors"
+                    onClick={() => { handleExport(); setIsExportMenuOpen(false); }}
+                  >
+                    .SRT
+                  </button>
+                  <button
+                    className="w-full text-left px-4 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-surface)] hover:text-white transition-colors"
+                    onClick={() => { handleExportVtt(); setIsExportMenuOpen(false); }}
+                  >
+                    .VTT
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -480,7 +486,7 @@ function App() {
                     className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${viewMode === 'text' ? 'bg-[var(--bg-surface-active)] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-white'}`}
                     onClick={() => setViewMode('text')}
                   >
-                    Triple Pane
+                    Block+Text
                   </button>
                 </div>
               </div>
