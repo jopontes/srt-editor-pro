@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-deep: #0B0B14;
+    --bg-surface: #13131F;
+    --bg-surface-light: #1C1C2E;
+    --bg-surface-active: #24243B;
+    --text-primary: #F0F0FF;
+    --text-secondary: #9FA1B5;
+    --text-muted: #6B6D85;
+    --accent-primary: #7C3AED;
+    --accent-cyan: #06B6D4;
+    --accent-pink: #EC4899;
+    --border-dim: #2A2A3F;
+    --border-highlight: #3F3F5F;
+    --gradient-btn: linear-gradient(135deg, #24243B 0%, #1C1C2E 100%);
+    --gradient-btn-hover: linear-gradient(135deg, #2E2E4A 0%, #24243B 100%);
+    --gradient-primary: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%);
+  }
+  
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-deep);
+    color: var(--text-primary);
+  }
+}
+
+@layer components {
+  .btn-tactile {
+    background: var(--gradient-btn);
+    border: 1px solid var(--border-highlight);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
+    transition: all 0.2s ease;
+  }
+  .btn-tactile:hover {
+    background: var(--gradient-btn-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.1);
+    border-color: #4B4B6F;
+  }
+  .btn-tactile:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 1px rgba(0,0,0,0.2);
+  }
+  .btn-tactile:disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+  
+  .btn-primary-tactile {
+    background: var(--gradient-primary);
+    border: 1px solid #8B5CF6;
+    box-shadow: 0 2px 4px rgba(124, 58, 237, 0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+  }
+  .btn-primary-tactile:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4), inset 0 1px 0 rgba(255,255,255,0.25);
+  }
+  .btn-primary-tactile:disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+  
+  .active-block-glow {
+    border-color: var(--accent-primary) !important;
+    box-shadow: 0 0 15px rgba(124, 58, 237, 0.15), inset 0 0 0 1px rgba(124, 58, 237, 0.3);
+    background: linear-gradient(90deg, rgba(124,58,237,0.03) 0%, transparent 100%) !important;
+  }
+  
+  .floating-toolbar {
+    backdrop-filter: blur(8px);
+    background: rgba(19, 19, 31, 0.85);
+  }
+  .track-pattern {
+    background-image: linear-gradient(90deg, #2A2A3F 1px, transparent 1px);
+    background-size: 20px 100%;
+  }
+
+  /* Font classes mapping logic due to conflict if missing globally */
+  .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+/* Base custom classes globally applicable */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #3F3F5F;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #555577;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  height: 8px;
+}
