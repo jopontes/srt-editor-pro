@@ -22,9 +22,12 @@ export default async function handler(req) {
         });
 
         const data = await response.text();
+        const outputFormat = new URL(url).searchParams.get('output_format');
+        const contentType = outputFormat === 'srt' ? 'text/plain' : 'application/json';
+
         return new Response(data, {
             status: response.status,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': contentType }
         });
     } catch (error) {
         return new Response(JSON.stringify({ error: error.message }), { status: 500 });

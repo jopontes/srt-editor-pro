@@ -208,12 +208,28 @@ export default function VisualTimeline({ subtitles, currentTime, maxTime, onSeek
                                     </div>
                                 </div>
                                 <div
-                                    className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-[var(--accent-primary)] opacity-50 z-20"
-                                    onMouseDown={(e) => { e.stopPropagation(); setDraggingBlock({ id: sub.id, isLeftEdge: true, isRightEdge: false }); }}
+                                    className="absolute left-0 top-0 bottom-0 w-3 cursor-ew-resize hover:bg-[var(--accent-primary)] opacity-50 z-20"
+                                    onMouseDown={(e) => {
+                                        e.stopPropagation();
+                                        setDraggingBlock({
+                                            id: sub.id,
+                                            isLeftEdge: true,
+                                            isRightEdge: false,
+                                            initialSubtitles: subtitles
+                                        });
+                                    }}
                                 />
                                 <div
-                                    className={`absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize opacity-50 z-20 ${isActive ? 'bg-[var(--accent-cyan)]/20 hover:bg-[var(--accent-cyan)]' : 'hover:bg-gray-400'}`}
-                                    onMouseDown={(e) => { e.stopPropagation(); setDraggingBlock({ id: sub.id, isLeftEdge: false, isRightEdge: true }); }}
+                                    className={`absolute right-0 top-0 bottom-0 w-3 cursor-ew-resize opacity-50 z-20 ${isActive ? 'bg-[var(--accent-cyan)]/20 hover:bg-[var(--accent-cyan)]' : 'hover:bg-gray-400'}`}
+                                    onMouseDown={(e) => {
+                                        e.stopPropagation();
+                                        setDraggingBlock({
+                                            id: sub.id,
+                                            isLeftEdge: false,
+                                            isRightEdge: true,
+                                            initialSubtitles: subtitles
+                                        });
+                                    }}
                                 />
                             </div>
                         );

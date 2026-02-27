@@ -153,7 +153,7 @@ function App() {
         } else {
           parsed = [];
         }
-      } catch (e) {
+      } catch {
         parsed = parseSrt(responseData);
       }
 
@@ -624,7 +624,7 @@ function App() {
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-mono text-[var(--text-muted)] border border-[var(--border-dim)] px-1.5 rounded">16:9</span>
                 <input type="file" accept="video/mp4,video/webm,video/ogg" className="hidden" ref={videoInputRef} onChange={handleVideoUpload} />
-                <button className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] p-1 rounded hover:bg-[var(--bg-surface-light)] transition-colors" title="Load Local Video" onClick={() => videoInputRef.current.click()}>
+                <button className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] p-1 rounded hover:bg-[var(--bg-surface-light)] transition-colors" title="Load Video" onClick={() => videoInputRef.current.click()}>
                   <span className="material-symbols-outlined text-[16px]">video_file</span>
                 </button>
               </div>
@@ -658,7 +658,7 @@ function App() {
                     <span className="material-symbols-outlined text-5xl opacity-40">movie_edit</span>
                     <p className="text-sm">Video Preview Area</p>
                     <button className="btn-tactile px-3 py-1.5 rounded text-xs font-medium text-[var(--text-primary)] flex items-center gap-2 mt-2" onClick={() => videoInputRef.current.click()}>
-                      Load Local Video
+                      Load Video
                     </button>
                   </span>
                 )}
