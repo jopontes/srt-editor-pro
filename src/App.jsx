@@ -94,18 +94,8 @@ function App() {
       formData.append('file', audioBlob, 'audio.wav');
       formData.append('model_id', 'scribe_v1');
 
-      const apiKey = localStorage.getItem('ELEVENLABS_API_KEY') || prompt("Please enter your ElevenLabs API Key:");
-      if (!apiKey) {
-        setIsGeneratingCaptions(false);
-        return;
-      }
-      localStorage.setItem('ELEVENLABS_API_KEY', apiKey);
-
-      const response = await fetch('https://api.elevenlabs.io/v1/speech-to-text?output_format=srt', {
+      const response = await fetch('/api/transcribe', {
         method: 'POST',
-        headers: {
-          'xi-api-key': apiKey
-        },
         body: formData
       });
 

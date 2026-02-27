@@ -225,11 +225,7 @@ I defaulted to what I had practiced.
 Output ONLY the formatted plain text. Use a single line break to separate lines within the same block, and a double line break to separate completely different blocks. Do NOT output timestamps or any conversational text.`;
 
     try {
-        const apiKey = localStorage.getItem('GOOGLE_API_KEY') || prompt("Please enter your Google Gemini API Key:");
-        if (!apiKey) return text;
-        localStorage.setItem('GOOGLE_API_KEY', apiKey);
-
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${apiKey}`, {
+        const response = await fetch('/api/format', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
