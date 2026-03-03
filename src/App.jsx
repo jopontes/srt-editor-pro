@@ -18,6 +18,7 @@ function App() {
   const [isFormatting, setIsFormatting] = useState(false);
   const [currentVideoFile, setCurrentVideoFile] = useState(null);
   const [isGeneratingCaptions, setIsGeneratingCaptions] = useState(false);
+  const [generatingProgress, setGeneratingProgress] = useState(null);
 
   // New states for Smart Naming and Zoom
   const [srtFileName, setSrtFileName] = useState(null);
@@ -106,55 +107,84 @@ function App() {
     if (!currentVideoFile) return;
 
     setIsGeneratingCaptions(true);
+    setGeneratingProgress({ current: 0, total: 0 });
     try {
-      const audioBlob = await extractAudioFromVideo(currentVideoFile);
+      const { audioBufferToWavBlob } = await import('./utils/audioExtractor');
+      const fullAudioBuffer = await extractAudioFromVideo(currentVideoFile);
 
-      const formData = new FormData();
-      formData.append('file', audioBlob, 'audio.wav');
-      formData.append('model_id', 'scribe_v1');
+      const chunkDuration = 120; // 2 minutes per chunk to stay well under 4MB
+      const totalDuration = fullAudioBuffer.duration;
+      const numChunks = Math.ceil(totalDuration / chunkDuration);
 
-      const response = await fetch('/api/transcribe', {
-        method: 'POST',
-        body: formData
-      });
+      setGeneratingProgress({ current: 0, total: numChunks });
+      let allWords = [];
 
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status} ${await response.text()}`);
+      for (let i = 0; i < numChunks; i++) {
+        setGeneratingProgress(prev => ({ ...prev, current: i + 1 }));
+        const startTime = i * chunkDuration;
+        const audioBlob = audioBufferToWavBlob(fullAudioBuffer, startTime, chunkDuration);
+        if (!audioBlob) continue;
+
+        const formData = new FormData();
+        formData.append('file', audioBlob, `chunk_${i}.wav`);
+        formData.append('model_id', 'scribe_v1');
+
+        const response = await fetch('/api/transcribe', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          throw new Error(`API Error: ${response.status} ${await response.text()}`);
+        }
+
+        const responseData = await response.text();
+        let chunkWords = [];
+
+        try {
+          const json = JSON.parse(responseData);
+          if (json.words && json.words.length > 0) {
+            // Offset words by chunk start time
+            chunkWords = json.words.map(w => ({
+              ...w,
+              start: w.start + startTime,
+              end: w.end + startTime
+            }));
+          }
+        } catch {
+          // Fallback if ElevenLabs returns SRT or something else
+          // But with chunking, we really expect the word-level JSON for better merging
+          console.warn("Could not parse JSON response for chunk", i);
+        }
+
+        allWords = [...allWords, ...chunkWords];
       }
 
-      const responseData = await response.text();
       let parsed = [];
+      if (allWords.length > 0) {
+        let chunks = [];
+        let currentChunk = { id: 1, start: allWords[0].start * 1000, end: allWords[0].end * 1000, text: "" };
+        let wordCount = 0;
 
-      try {
-        const json = JSON.parse(responseData);
-        if (json.words && json.words.length > 0) {
-          let chunks = [];
-          let currentChunk = { id: 1, start: json.words[0].start * 1000, end: json.words[0].end * 1000, text: "" };
-          let wordCount = 0;
+        for (const w of allWords) {
+          if (w.type === "spacing") continue;
 
-          for (const w of json.words) {
-            if (w.type === "spacing") continue;
-
-            if (wordCount >= 7 || (w.start * 1000 - currentChunk.end > 500)) {
-              if (currentChunk.text.trim()) chunks.push(currentChunk);
-              currentChunk = { id: chunks.length + 1, start: w.start * 1000, end: w.end * 1000, text: "" };
-              wordCount = 0;
-            }
-
-            const textToAdd = (w.text || "").trim();
-            if (textToAdd) {
-              currentChunk.text += (currentChunk.text ? " " : "") + textToAdd;
-              currentChunk.end = w.end * 1000;
-              wordCount++;
-            }
+          // Split if 7 words reached or there's a gap > 500ms
+          if (wordCount >= 7 || (w.start * 1000 - currentChunk.end > 500)) {
+            if (currentChunk.text.trim()) chunks.push(currentChunk);
+            currentChunk = { id: chunks.length + 1, start: w.start * 1000, end: w.end * 1000, text: "" };
+            wordCount = 0;
           }
-          if (currentChunk.text.trim()) chunks.push(currentChunk);
-          parsed = chunks;
-        } else {
-          parsed = [];
+
+          const textToAdd = (w.text || "").trim();
+          if (textToAdd) {
+            currentChunk.text += (currentChunk.text ? " " : "") + textToAdd;
+            currentChunk.end = w.end * 1000;
+            wordCount++;
+          }
         }
-      } catch {
-        parsed = parseSrt(responseData);
+        if (currentChunk.text.trim()) chunks.push(currentChunk);
+        parsed = chunks;
       }
 
       setSubtitles(parsed);
@@ -165,8 +195,10 @@ function App() {
       alert("Failed to transcribe audio: " + error.message);
     } finally {
       setIsGeneratingCaptions(false);
+      setGeneratingProgress(null);
     }
   };
+
 
   useEffect(() => {
     if (videoUrl) return;
@@ -504,7 +536,23 @@ function App() {
               {subtitles.length === 0 ? (
                 <div className="h-full flex items-center justify-center text-[var(--text-muted)] text-sm flex-col gap-4">
                   <span className="material-symbols-outlined text-4xl opacity-50">subtitles_off</span>
-                  <p>Import an SRT or generate captions from a video</p>
+                  {videoUrl && isLocalVideo ? (
+                    <div className="flex flex-col items-center gap-4 text-center">
+                      <p>Generate captions using AI or import an existing SRT</p>
+                      <button
+                        className="btn-primary-tactile py-2 px-6 rounded-xl text-sm font-medium text-white flex items-center justify-center gap-2 shadow-lg shadow-violet-500/20"
+                        onClick={handleGenerateCaptions}
+                        disabled={isGeneratingCaptions}
+                      >
+                        <span className="material-symbols-outlined">{isGeneratingCaptions ? 'hourglass_top' : 'auto_fix_high'}</span>
+                        {isGeneratingCaptions ? (
+                          `Transcribing... ${generatingProgress ? `(${generatingProgress.current}/${generatingProgress.total})` : ''}`
+                        ) : "Generate Captions from Video"}
+                      </button>
+                    </div>
+                  ) : (
+                    <p>Import an SRT or generate captions from a video</p>
+                  )}
                 </div>
               ) : (
                 <div className="flex flex-col gap-3 max-w-4xl mx-auto">
@@ -693,7 +741,9 @@ function App() {
                   disabled={isGeneratingCaptions}
                 >
                   <span className="material-symbols-outlined">{isGeneratingCaptions ? 'hourglass_top' : 'auto_fix_high'}</span>
-                  {isGeneratingCaptions ? "AI is transcribing... please wait" : "Generate Captions Automatically"}
+                  {isGeneratingCaptions ? (
+                    `AI is transcribing... ${generatingProgress ? `(Part ${generatingProgress.current} of ${generatingProgress.total})` : 'preparing'}`
+                  ) : "Generate Captions Automatically"}
                 </button>
               </div>
             )}

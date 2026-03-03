@@ -8,7 +8,7 @@ export default async function handler(req) {
     }
 
     const apiKey = process.env.ELEVENLABS_API_KEY || process.env.VITE_ELEVENLABS_API_KEY;
-    const url = 'https://api.elevenlabs.io/v1/speech-to-text?output_format=srt';
+    const url = 'https://api.elevenlabs.io/v1/speech-to-text';
 
     try {
         const response = await fetch(url, {

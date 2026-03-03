@@ -4,8 +4,8 @@ export async function extractAudioFromVideo(videoFile) {
   const arrayBuffer = await videoFile.arrayBuffer();
   const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
 
-  // 2. Downsample offline to 16000Hz mono to save bandwidth
-  const targetSampleRate = 16000;
+  // 2. Downsample offline to 12000Hz mono to save bandwidth (enough for speech)
+  const targetSampleRate = 12000;
   const targetChannels = 1;
   const offlineContext = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(
     targetChannels,
@@ -19,27 +19,26 @@ export async function extractAudioFromVideo(videoFile) {
   bufferSource.start(0);
 
   const downsampledBuffer = await offlineContext.startRendering();
-
-  // 3. Convert to WAV
-  const wavBytes = audioBufferToWav(downsampledBuffer);
-  return new Blob([wavBytes], { type: 'audio/wav' });
+  
+  // Return the buffer so caller can decide how to chunk it
+  return downsampledBuffer;
 }
 
-function audioBufferToWav(buffer, opt) {
-  opt = opt || {}
-  const numChannels = buffer.numberOfChannels
-  const sampleRate = buffer.sampleRate
-  const format = opt.float32 ? 3 : 1
-  const bitDepth = format === 3 ? 32 : 16
+export function audioBufferToWavBlob(buffer, startTime = 0, duration = null) {
+  const sampleRate = buffer.sampleRate;
+  const startSample = Math.floor(startTime * sampleRate);
+  const totalSamples = buffer.length;
+  const sliceSamples = duration ? Math.floor(duration * sampleRate) : (totalSamples - startSample);
+  
+  const actualSamples = Math.min(sliceSamples, totalSamples - startSample);
+  
+  if (actualSamples <= 0) return null;
 
-  let result
-  if (numChannels === 2) {
-    result = interleave(buffer.getChannelData(0), buffer.getChannelData(1))
-  } else {
-    result = buffer.getChannelData(0)
-  }
+  const channelData = buffer.getChannelData(0);
+  const slicedData = channelData.slice(startSample, startSample + actualSamples);
 
-  return encodeWAV(result, format, sampleRate, numChannels, bitDepth)
+  const wavBytes = encodeWAV(slicedData, 1, sampleRate, 1, 16);
+  return new Blob([wavBytes], { type: 'audio/wav' });
 }
 
 function encodeWAV(samples, format, sampleRate, numChannels, bitDepth) {
@@ -62,32 +61,17 @@ function encodeWAV(samples, format, sampleRate, numChannels, bitDepth) {
   view.setUint16(34, bitDepth, true)
   writeString(view, 36, 'data')
   view.setUint32(40, samples.length * bytesPerSample, true)
+  
   if (format === 1) { // Raw PCM
     floatTo16BitPCM(view, 44, samples)
   } else {
-    writeFloat32(view, 44, samples)
+    // Should not happen with our use case
+    for (let i = 0; i < samples.length; i++, offset += 4) {
+      view.setFloat32(44 + i * 4, samples[i], true)
+    }
   }
 
   return buffer
-}
-
-function interleave(inputL, inputR) {
-  const length = inputL.length + inputR.length
-  const result = new Float32Array(length)
-  let index = 0
-  let inputIndex = 0
-  while (index < length) {
-    result[index++] = inputL[inputIndex]
-    result[index++] = inputR[inputIndex]
-    inputIndex++
-  }
-  return result
-}
-
-function writeFloat32(output, offset, input) {
-  for (let i = 0; i < input.length; i++, offset += 4) {
-    output.setFloat32(offset, input[i], true)
-  }
 }
 
 function floatTo16BitPCM(output, offset, input) {
@@ -102,3 +86,4 @@ function writeString(view, offset, string) {
     view.setUint8(offset + i, string.charCodeAt(i))
   }
 }
+

@@ -188,7 +188,7 @@ export function syncContinuousText(fullText, oldSubtitles) {
     return result;
 }
 
-export async function autoFormatText(text, maxCharsPerLine = 42, maxLinesPerBlock = 2) {
+export async function autoFormatText(text, maxCharsPerLine = 40, maxLinesPerBlock = 2) {
     if (!text) return '';
 
     const fullString = text.replace(/\s+/g, ' ').trim();
@@ -229,7 +229,7 @@ Output ONLY the formatted plain text. Use a single line break to separate lines 
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                system_instruction: { parts: [{ text: systemInstruction }] },
+                systemInstruction: { parts: [{ text: systemInstruction }] },
                 contents: [{ parts: [{ text: fullString }] }],
                 generationConfig: { temperature: 0.1 }
             })
